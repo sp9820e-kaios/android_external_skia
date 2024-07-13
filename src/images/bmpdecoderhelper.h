@@ -16,6 +16,8 @@
 
 #include "SkTypes.h"
 #include <limits.h>
+#include "SkRect.h"
+
 #define DISALLOW_EVIL_CONSTRUCTORS(name)
 #define CHECK(predicate)  SkASSERT(predicate)
 typedef uint8_t uint8;
@@ -62,6 +64,7 @@ class BmpDecoderCallback {
    * valid dimensions.
    */
   virtual uint8* SetSize(int width, int height) = 0;
+  virtual uint8* SetSizeRegion(int width, int height, SkIRect * region) = 0;
 
  private:
   DISALLOW_EVIL_CONSTRUCTORS(BmpDecoderCallback);
@@ -74,14 +77,18 @@ class BmpDecoderHelper {
   bool DecodeImage(const char* data,
                    size_t len,
                    int max_pixels,
+                   SkIRect* region,
                    BmpDecoderCallback* callback);
 
  private:
   DISALLOW_EVIL_CONSTRUCTORS(BmpDecoderHelper);
 
   void DoRLEDecode();
+  void DoRLEDecodeRegion(SkIRect* region);
   void DoStandardDecode();
+  void DoStandardDecodeRegion(SkIRect* region);
   void PutPixel(int x, int y, uint8 col);
+  void PutPixelRegion(int x, int y, uint8 col, SkIRect* region);
 
   int GetInt();
   int GetShort();
@@ -109,6 +116,8 @@ class BmpDecoderHelper {
   int blueShiftLeft_;
   uint8* output_;
   bool inverted_;
+  int rowLen_;
+  const uint8* pixelPtr_;
 };
 
 } // namespace

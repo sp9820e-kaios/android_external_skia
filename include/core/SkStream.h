@@ -10,8 +10,17 @@
 
 #include "SkRefCnt.h"
 #include "SkScalar.h"
+#include <cutils/properties.h>
+
 
 class SkData;
+namespace android {
+    class DrmManagerClientImpl;
+    class DecryptHandleWrapper;
+};
+
+using android::DrmManagerClientImpl;
+using android::DecryptHandleWrapper;
 
 class SkStream;
 class SkStreamRewindable;
@@ -282,6 +291,22 @@ private:
     mutable SkAutoTUnref<SkData> fData;
 
     typedef SkStreamAsset INHERITED;
+};
+
+class SkDrmStream : public SkStreamRewindable {
+    int mUniqueId;
+    off64_t mOffset;
+    DrmManagerClientImpl* mClient;
+    DecryptHandleWrapper* mHandleWrapper;
+	bool 				  mEof;
+public:
+    SkDrmStream(int uniqueId, DrmManagerClientImpl*, DecryptHandleWrapper*);
+    virtual ~SkDrmStream();
+    virtual bool rewind() override ;
+    virtual size_t read(void* buffer, size_t size) override ;
+//    virtual const char* getFileName() override { return NULL; }
+    virtual SkStreamRewindable* duplicate() const override { return NULL; }
+    virtual bool isAtEnd() const override { return mEof; }	
 };
 
 class SK_API SkMemoryStream : public SkStreamMemory {

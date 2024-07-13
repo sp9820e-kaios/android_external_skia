@@ -43,4 +43,9 @@ SkData *SkCopyStreamToData(SkStream* stream);
  */
 SkStreamRewindable* SkStreamRewindableFromSkStream(SkStream* stream);
 
+/** SPRD:Adding BMP size constraints, if the size of BMP file is larger than 110MB, do not decode,
+ *  On low ram devices, the file size limit is 55MB.
+ */
+ size_t getBMPLimitSize();
+
 #endif  // SkStreamPriv_DEFINED

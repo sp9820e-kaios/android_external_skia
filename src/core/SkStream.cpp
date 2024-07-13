@@ -14,7 +14,12 @@
 #include "SkString.h"
 #include "SkOSFile.h"
 #include "SkTypes.h"
+#include <cutils/ashmem.h>
+#include <sys/mman.h>
+#include <drm/DrmManagerClient.h>
 
+using android::sp;
+using android::DecryptHandle;
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -853,13 +858,32 @@ SkStreamAsset* SkStream::NewFromFile(const char path[]) {
     return stream;
 }
 
+
+// Declared in SkStreamPriv.h:
+size_t getBMPLimitSize() {
+    size_t BMP_SIZE_LIMIT = 110 * 1024 * 1024;
+    if (property_get_bool("ro.config.low_ram", false)) {
+        BMP_SIZE_LIMIT = 55 * 1024 * 1024;
+    }
+    return BMP_SIZE_LIMIT;
+}
+
 // Declared in SkStreamPriv.h:
 size_t SkCopyStreamToStorage(SkAutoMalloc* storage, SkStream* stream) {
     SkASSERT(storage != NULL);
     SkASSERT(stream != NULL);
 
+    const size_t BMP_SIZE_LIMIT = getBMPLimitSize();
+
     if (stream->hasLength()) {
         const size_t length = stream->getLength();
+
+        //SPRD: large BMP image decoding will cause OOM, if the picture size is larger than 110M, do not decode
+        if (length > BMP_SIZE_LIMIT) {
+            SkDebugf("bmp size is %d, larger than %d bytes, do not decode.", (unsigned int)length,(unsigned int)BMP_SIZE_LIMIT);
+            return 0;
+        }
+
         void* dst = storage->reset(length);
         if (stream->read(dst, length) != length) {
             return 0;
@@ -872,11 +896,24 @@ size_t SkCopyStreamToStorage(SkAutoMalloc* storage, SkStream* stream) {
     const size_t bufferSize = 256 * 1024; // 256KB
     char buffer[bufferSize];
     SkDEBUGCODE(size_t debugLength = 0;)
+
+    //SPRD: variable readLength records the number of bytes has been read
+    size_t readLength = 0;
+
     do {
         size_t bytesRead = stream->read(buffer, bufferSize);
         tempStream.write(buffer, bytesRead);
         SkDEBUGCODE(debugLength += bytesRead);
         SkASSERT(tempStream.bytesWritten() == debugLength);
+
+        //SPRD: seek to 110M, if stream pointer is not at end, then file size is larger than 110M, do not decode
+        readLength += bytesRead;
+        if (readLength > BMP_SIZE_LIMIT) {
+            stream->rewind();
+            SkDebugf("%d bytes has been read, bmp stream length is larger than %d bytes, do not decode.", (unsigned int)readLength,
+                (unsigned int)BMP_SIZE_LIMIT);
+            return 0;
+        }
     } while (!stream->isAtEnd());
     const size_t length = tempStream.bytesWritten();
     void* dst = storage->reset(length);

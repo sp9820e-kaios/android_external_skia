@@ -243,6 +243,7 @@ LOCAL_SRC_FILES := \
 	src/image/SkImage_Raster.cpp \
 	src/image/SkSurface.cpp \
 	src/image/SkSurface_Raster.cpp \
+	src/images/SkDrmStream.cpp \
 	src/pipe/SkGPipeRead.cpp \
 	src/pipe/SkGPipeWrite.cpp \
 	src/lazy/SkCachingPixelRef.cpp \
@@ -597,7 +598,9 @@ LOCAL_SHARED_LIBRARIES := \
 	libicuuc \
 	libicui18n \
 	libexpat \
-	libft2
+	libdrmframework \
+	libft2 \
+        libcutils
 
 LOCAL_STATIC_LIBRARIES := \
 	libgif \
@@ -633,6 +636,8 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/third_party/ktx \
 	external/webp/include \
 	external/expat/lib \
+	$(TOP)/frameworks/av/include \
+	$(TOP)/frameworks/av/drm/libdrmframework/include \
 	external/freetype/include \
 	$(LOCAL_PATH)/include/utils/win \
 	$(LOCAL_PATH)/src/ports \
